@@ -1,0 +1,1 @@
+-- Seed intencionalmente vacio en el bootstrap inicial.

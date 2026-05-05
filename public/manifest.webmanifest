@@ -1,0 +1,20 @@
+{
+  "name": "Cobro Diario",
+  "short_name": "CobroDiario",
+  "description": "WebApp de recaudo diario con arquitectura offline-first y backend sobre Supabase.",
+  "lang": "es-CO",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4efe4",
+  "theme_color": "#13392f",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

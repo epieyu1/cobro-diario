@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "github": {
+      "url": "https://api.githubcopilot.com/mcp/"
+    },
+    "vercel": {
+      "url": "https://mcp.vercel.com"
+    },
+    "supabase": {
+      "url": "https://mcp.supabase.com/mcp"
+    }
+  }
+}
