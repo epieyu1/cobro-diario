@@ -91,6 +91,23 @@
 - La auditoría de Vercel confirmó presencia de `VITE_APP_NAME`, `VITE_DEFAULT_LOCALE`, `VITE_DEFAULT_CURRENCY`, `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY` en `Development`, `Preview` y `Production`, sin exponer sus valores.
 - El smoke del preview Git sigue pendiente antes de tratar esta URL como candidato operativo compartible.
 
+### Smoke operativo de preview del `2026-05-07`
+
+- La rama `preview-phase5-candidate-20260507` volvió a disparar un preview Git nuevo después del commit documental `5df099e`:
+  - URL directa vigente: https://cobro-diario-jo7ayujx7-alexander-restrepo-epieyus-projects.vercel.app
+  - alias Git estable: https://cobro-diario-git-pre-6576ff-alexander-restrepo-epieyus-projects.vercel.app
+- `scripts/phase4-mobile-smoke.mjs` no pudo completar el smoke sobre el preview porque ambas URLs respondieron `HTTP/2 403` con `x-vercel-mitigated: challenge` y `x-vercel-challenge-token`.
+- Ese bloqueo quedó identificado como barrera perimetral de Vercel sobre el preview, no como error demostrado de la app dentro del runtime.
+- La verificación complementaria de backend dejó dos resultados separados:
+  - `npm run smoke:receipt-pdf -- fase4.playground@cobrodiario.dev 123456 PG-ELI-001` pasó contra `LANDING`, con `paymentId = 8a83c962-78d3-45e5-8741-6fbcadd828d7` y PDF válido en `/var/folders/7q/rlhk14sx41z4r8pkzfbrpwzw0000gn/T/cobro-diario-receipt-smoke/recibo-pdf-pg-eli-001-1778177809863.pdf`
+  - `node scripts/phase4-auth-user.mjs smoke fase4.collector@cobrodiario.dev 123456 collector` falló con `expected_overdue_installments:1<2`
+- El snapshot real visible para `fase4.collector@cobrodiario.dev` al momento del smoke fue:
+  - `customerCount = 7`
+  - `loanStatusCounts = { delinquent: 1, active: 2, settled: 4 }`
+  - `installmentStatusCounts = { paid: 7, overdue: 1, pending: 6 }`
+  - `partialOutstandingInstallments = []`
+- La cartera remota de ese cobrador quedó contaminada por residuos smoke (`OR4 Smoke ...`, `RV6 Smoke ...`) y ya no coincide con el baseline histórico rígido del smoke Auth/RLS.
+
 ### Criterio operativo de altas del `2026-05-07`
 
 - El alta de `collector` (cobrador) queda fijada como flujo exclusivo de la app web bajo sesión `admin`, usando `public.provision_collector_account(...)`.
