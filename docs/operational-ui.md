@@ -91,6 +91,7 @@ esta vista de rutas ya no debe contradecir PostgreSQL: `routeLabel` vigente lleg
 - Sin entorno listo, el drawer solo expone configuración y arquitectura; no debe fingir login, cartera ni acciones de cobro.
 - Durante bootstrap, el drawer solo expone estado y contexto del arranque local; no debe insinuar que la shell operativa ya está lista.
 - Sin sesión, el drawer público solo ofrece acceso al login, reglas operativas y arquitectura; no debe fingir cartera ni acciones de cobro.
+- Ese mismo estado público ya no reutiliza el hero autenticado: las acciones `Actualizar` / `Nuevo Crédito`, las métricas de cartera y la tira `status-strip` solo aparecen con sesión activa, para no presentar indicadores de sync/cartera antes de que Auth y el bootstrap remoto confirmen el contexto real.
 - Con sesión activa, el mismo menú hamburguesa expone `Cartera`, `Detalle` y `Operacion` sin depender de una barra inferior fija.
 - La opción `Operacion` del drawer ya no depende de entrar primero a otro panel: abre una `operations-sheet` role-aware.
 - El rol `collector` (cobrador) ve `Cobro`, `Gestion`, `Recibo`, `Cola` y `Reglas`.

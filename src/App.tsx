@@ -1506,8 +1506,11 @@ function App() {
             </>
           )}
 
-          <div className="hero-actions">
-            {sessionUserId && (
+          {/* El hero solo expone acciones operativas cuando existe sesion autenticada.
+              Riesgo: reintroducir CTAs o estado de runtime en la vista publica vuelve a prometer operacion
+              antes de que Auth y el bootstrap remoto confirmen el contexto real del cobrador/admin. */}
+          {sessionUserId && (
+            <div className="hero-actions">
               <button
                 className="button primary"
                 onClick={handleRefreshWorkspace}
@@ -1515,65 +1518,49 @@ function App() {
               >
                 {isRefreshing ? 'Actualizando...' : 'Actualizar'}
               </button>
-            )}
-            {sessionUserId && canAccessOrigination && (
-              <button
-                className="button secondary"
-                onClick={() => {
-                  setIsOperationsSheetOpen(true)
-                  setActiveOperationsPane('origination')
-                }}
-                type="button"
-              >
-                Nuevo Crédito
-              </button>
-            )}
-            {!sessionUserId && (
-              <a className="button secondary" href="#login-panel">
-                Iniciar sesión
-              </a>
-            )}
-          </div>
+              {canAccessOrigination && (
+                <button
+                  className="button secondary"
+                  onClick={() => {
+                    setIsOperationsSheetOpen(true)
+                    setActiveOperationsPane('origination')
+                  }}
+                  type="button"
+                >
+                  Nuevo Crédito
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
-        <div className="hero-metrics" role="region" aria-label="Indicadores clave">
-          {sessionUserId && dashboardMetrics.length > 0
-            ? dashboardMetrics.map((metric) => (
+          {sessionUserId && dashboardMetrics.length > 0 && (
+            <div className="hero-metrics" role="region" aria-label="Indicadores clave">
+              {dashboardMetrics.map((metric) => (
                 <article key={metric.label} className={`metric-card ${metric.tone}`}>
                   <span className="metric-label">{metric.label}</span>
                   <strong>{metric.value}</strong>
                 </article>
-              ))
-            : !sessionUserId && (
-                <>
-                  <article className="metric-card">
-                    <span className="metric-label">Moneda</span>
-                    <strong>{FINANCIAL_BASELINE.currencyCode}</strong>
-                  </article>
-                  <article className="metric-card">
-                    <span className="metric-label">Enfoque</span>
-                    <strong>Sin conexión</strong>
-                  </article>
-                  <article className="metric-card">
-                    <span className="metric-label">Seguridad</span>
-                    <strong>RLS activo</strong>
-                  </article>
-                </>
-              )}
-        </div>
+              ))}
+            </div>
+          )}
       </section>
 
-      <section className="status-strip" aria-label="Estado del sistema">
-        {runtimeCards.map((card) => (
-          <article key={card.label} className={`status-pill ${card.tone}`}>
-            <span className="status-indicator" />
-            <div className="status-pill-content">
-              <span className="metric-label">{card.label}</span>
-              <strong>{card.value}</strong>
-            </div>
-          </article>
-        ))}
-      </section>
+      {/* La tira de estado sigue leyendo runtime real, pero solo se renderiza con sesion activa
+          para no duplicar en la portada publica indicadores que dependen de cartera/sync autenticados. */}
+      {sessionUserId && (
+        <section className="status-strip" aria-label="Estado del sistema">
+          {runtimeCards.map((card) => (
+            <article key={card.label} className={`status-pill ${card.tone}`}>
+              <span className="status-indicator" />
+              <div className="status-pill-content">
+                <span className="metric-label">{card.label}</span>
+                <strong>{card.value}</strong>
+              </div>
+            </article>
+          ))}
+        </section>
+      )}
 
       {runtimeError && (
         <section className="banner danger" role="alert">

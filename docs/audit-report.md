@@ -1346,6 +1346,26 @@ En cualquier cierre relacionado con UI, agregar o actualizar:
 - Pendiente:
   - la validación manual móvil sigue diferida por decisión de producto.
 
+### Hero autenticado sin métricas ni estado en portada pública
+
+- Fecha: `2026-05-07`
+- Alcance: restringir el hero superior, las métricas resumen y la tira `status-strip` al contexto autenticado para no prometer cartera ni sync antes de que el runtime confirme la sesión real
+- Archivos tocados:
+  - `src/App.tsx`
+  - `docs/operational-ui.md`
+  - `docs/audit-report.md`
+- Comandos:
+  - `npm run check`
+  - `npm run test:phase4`
+  - `npm run test:perf`
+  - `git diff --check`
+- Resultado:
+  - la portada pública conserva branding y explicación de producto, pero ya no muestra CTAs ni indicadores que dependen de sesión,
+  - `Actualizar`, `Nuevo Crédito`, `hero-metrics` y `status-strip` solo aparecen con `sessionUserId`,
+  - y la compresión del header no reabre deuda de seguridad porque evita fingir estado operativo antes del bootstrap remoto.
+- Pendiente:
+  - la validación manual móvil sigue diferida por decisión de producto.
+
 ## Checklist operativo para futuros cierres
 
 ### Arquitectura de estilos
