@@ -173,15 +173,50 @@ begin
     updated_at = v_now;
 
   -- Esta limpieza deja el dataset remoto en estado canonico aunque una corrida previa
-  -- ya haya ejecutado cobros de smoke sobre estos mismos prestamos.
-  -- payment_applications y payment_events caen por cascade desde payments.
+  -- ya haya ejecutado cobros, originaciones o reversos de smoke bajo el mismo collector.
+  -- Riesgo: si solo limpiamos los cuatro IDs canonicos, los casos OR4/RV6 quedan vivos,
+  -- cambian los agregados visibles por RLS y rompen el smoke Auth/RLS aunque la app siga sana.
+  -- payment_applications y payment_events caen por cascade desde payments; installments
+  -- caen por cascade desde loans. collection_actions y sync_events se purgan aparte porque
+  -- customer_id no tiene cascade y porque la cola remota debe volver a cero.
+  delete from public.collection_actions
+  where collector_id = v_collector_id
+     or created_by = v_collector_id
+     or loan_id in (
+       select public.loans.id
+       from public.loans
+       where public.loans.collector_id = v_collector_id
+     )
+     or customer_id in (
+       select public.customers.id
+       from public.customers
+       where public.customers.assigned_collector_id = v_collector_id
+          or public.customers.created_by = v_collector_id
+     );
+
+  delete from public.sync_events
+  where collector_id = v_collector_id;
+
   delete from public.payments
-  where loan_id in (
-    '40000000-0000-0000-0000-000000000201',
-    '40000000-0000-0000-0000-000000000202',
-    '40000000-0000-0000-0000-000000000203',
-    '40000000-0000-0000-0000-000000000204'
-  );
+  where collector_id = v_collector_id
+     or loan_id in (
+       select public.loans.id
+       from public.loans
+       where public.loans.collector_id = v_collector_id
+     )
+     or customer_id in (
+       select public.customers.id
+       from public.customers
+       where public.customers.assigned_collector_id = v_collector_id
+          or public.customers.created_by = v_collector_id
+     );
+
+  delete from public.loans
+  where collector_id = v_collector_id;
+
+  delete from public.customers
+  where assigned_collector_id = v_collector_id
+     or created_by = v_collector_id;
 
   insert into public.customers (
     id,

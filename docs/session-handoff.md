@@ -108,6 +108,27 @@
   - `partialOutstandingInstallments = []`
 - La cartera remota de ese cobrador quedó contaminada por residuos smoke (`OR4 Smoke ...`, `RV6 Smoke ...`) y ya no coincide con el baseline histórico rígido del smoke Auth/RLS.
 
+### Limpieza y resembrado del smoke collector del `2026-05-07`
+
+- `supabase/seeds/phase4_landing_smoke.sql` quedó endurecido para purgar toda la cartera operativa del collector smoke antes de reinsertar el baseline canónico.
+- La limpieza ahora elimina residuos remotos por `collector_id` sobre:
+  - `public.collection_actions`
+  - `public.sync_events`
+  - `public.payments`
+  - `public.loans`
+  - `public.customers`
+- Esto corrige la fuga histórica donde el seed solo restablecía los cuatro préstamos canónicos y dejaba vivos casos `OR4 Smoke` / `RV6 Smoke`.
+- La resembra ya fue aplicada en `LANDING` con `supabase db query --linked --file supabase/seeds/phase4_landing_smoke.sql`.
+- Después de la resembra, `node scripts/phase4-auth-user.mjs smoke fase4.collector@cobrodiario.dev 123456 collector` volvió a pasar con el baseline esperado:
+  - `customerNames = [Ana Gomez, Brayan Rojas, Carolina Perez, Diana Torres]`
+  - `loanStatusCounts = { active: 2, delinquent: 1, settled: 1 }`
+  - `installmentStatusCounts = { pending: 6, overdue: 2, paid: 1 }`
+  - `partialOutstandingInstallments = [{ loanId: 40000000-0000-0000-0000-000000000202, installmentNumber: 1, outstandingAmount: 15000, scheduledAmount: 60000, status: overdue }]`
+- `npm run smoke:receipt-pdf -- fase4.playground@cobrodiario.dev 123456 PG-ELI-001` también volvió a pasar después del resembrado, con:
+  - `paymentId = 5d4871fa-5535-453a-9927-23f7784255b1`
+  - `receiptReference = PDF-PG-ELI-001-1778178266581`
+  - `outputPath = /var/folders/7q/rlhk14sx41z4r8pkzfbrpwzw0000gn/T/cobro-diario-receipt-smoke/recibo-pdf-pg-eli-001-1778178266581.pdf`
+
 ### Criterio operativo de altas del `2026-05-07`
 
 - El alta de `collector` (cobrador) queda fijada como flujo exclusivo de la app web bajo sesión `admin`, usando `public.provision_collector_account(...)`.
