@@ -7,6 +7,9 @@
 - Repo remoto configurado: `https://github.com/epieyu1/cobro-diario.git`
 - Rama principal: `main`
 - Commit inicial publicado: `0261ccc` (`chore: bootstrap cobro diario foundation`)
+- Candidato local actual de preview: rama `preview-phase5-candidate-20260507`
+- Commit local actual del candidato: `e61dca4` (`feat: prepare phase 5 preview candidate`)
+- Estado actual: el candidato ya quedó congelado localmente, pero todavia no ha sido empujado a GitHub.
 
 ### Supabase CLI
 
