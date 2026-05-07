@@ -5,24 +5,35 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "test": "vitest run",
+    "test:phase2": "vitest run src/lib/finance/money.test.ts src/lib/finance/payment-contract.test.ts",
+    "test:phase3": "vitest run src/lib/sync/payment-sync.test.ts",
+    "test:phase4": "vitest run src/lib/finance/payment-planning.test.ts src/lib/collector/collector-workspace.test.ts src/lib/collector/collector-route-board.test.ts src/lib/collector/collector-operational-flow.test.ts src/lib/sync/collection-action-sync.test.ts",
+    "test:phase5": "vitest run src/lib/auth/role-guards.test.ts src/lib/reports/report-queries.test.ts src/lib/reports/report-mappers.test.ts src/lib/receipts/receipt-analytics.test.ts src/lib/receipts/receipt-mapper.test.ts src/lib/receipts/receipt-pdf.test.ts src/lib/receipts/receipt-status.test.ts src/lib/receipts/bluetooth-printer.test.ts",
+    "test:phase6": "vitest run src/lib/finance/payment-reversal.test.ts src/lib/sync/payment-reversal-sync.test.ts",
+    "test:phase7": "vitest run src/lib/finance/origination-schedule.test.ts src/lib/origination/origination-transport.test.ts src/lib/origination/origination-validation.test.ts src/lib/origination/origination-wizard.test.ts",
+    "test:financial-v2": "vitest run src/lib/finance/payment-contract-v2.test.ts src/lib/finance/payment-planning-v2.test.ts src/lib/finance/compound-interest.test.ts",
+    "test:perf": "node scripts/test-perf.mjs",
+    "smoke:phase7": "node scripts/phase7-origination-smoke.mjs",
+    "smoke:receipt-pdf": "node --experimental-strip-types scripts/phase5-receipt-pdf-smoke.ts",
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "check": "npm run lint && npm run build",
+    "playground": "node scripts/phase4-playground.mjs",
+    "smoke:phase6": "node scripts/phase6-reversal-concurrency-smoke.mjs",
     "db:start": "supabase start",
-    "db:reset": "supabase db reset"
+    "db:reset": "supabase db reset",
+    "db:playground:reset": "supabase db query --linked --file supabase/seeds/phase4_landing_playground.sql"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.3",
-    "@tanstack/react-query": "^5.100.9",
-    "date-fns": "^4.1.0",
     "decimal.js": "^10.6.0",
     "dexie": "^4.4.2",
+    "jspdf": "^4.2.1",
     "react": "^19.2.5",
-    "react-dom": "^19.2.5",
-    "react-router-dom": "^7.14.2",
-    "zod": "^4.4.3"
+    "react-dom": "^19.2.5"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -33,10 +44,12 @@
     "eslint": "^10.2.1",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
+    "fake-indexeddb": "^6.2.5",
     "globals": "^17.5.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.2",
-    "vite": "^8.0.10"
+    "vite": "^8.0.10",
+    "vitest": "^4.1.5"
   },
   "engines": {
     "node": ">=20.19.0"

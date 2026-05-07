@@ -15,6 +15,7 @@ Los comentarios de este repositorio deben ayudar a otro asistente o ingeniero a 
 ## Qué debe incluir un comentario útil
 
 - intención,
+- flujo de datos o comunicación cuando aplique,
 - restricción,
 - riesgo si se cambia,
 - fuente de verdad o dependencia externa cuando aplique.
@@ -27,6 +28,12 @@ Los comentarios de este repositorio deben ayudar a otro asistente o ingeniero a 
 // Esta capa solo mantiene estado local operativo.
 // La verdad final del pago vive en Supabase y no debe asumirse confirmada
 // hasta que exista persistencia remota o una marca explícita de sincronización.
+```
+
+```ts
+// Intención: bootstrap remoto del espacio operativo del cobrador.
+// Flujo: Supabase -> normalización local -> IndexedDB -> render de UI.
+// Riesgo: si se refresca con cola pendiente, se pisan saldos optimistas locales.
 ```
 
 ### SQL / RPC

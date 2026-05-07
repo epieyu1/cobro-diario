@@ -55,16 +55,16 @@ Fuente oficial consultada: guia MCP de Supabase.
 Servidor remoto:
 
 ```text
-https://mcp.supabase.com/mcp
+https://mcp.supabase.com/mcp?project_ref=vmlxfbqezgjivesxahfe
 ```
 
 Comando equivalente:
 
 ```bash
-codex mcp add supabase --url https://mcp.supabase.com/mcp
+codex mcp add supabase --url 'https://mcp.supabase.com/mcp?project_ref=vmlxfbqezgjivesxahfe'
 ```
 
-Si quieres fijar el proyecto remoto directamente, puedes pasar `project_ref` en la URL una vez exista el proyecto final.
+En este repositorio, el proyecto objetivo es `landing` y debe apuntar al `project_ref` `vmlxfbqezgjivesxahfe`.
 
 ## Flujo recomendado
 
@@ -73,3 +73,13 @@ Si quieres fijar el proyecto remoto directamente, puedes pasar `project_ref` en 
 3. Crear proyecto en Supabase y enlazarlo con `supabase link`.
 4. Autenticar MCPs.
 5. Reiniciar Codex y verificar disponibilidad de herramientas MCP antes de continuar con cambios de infraestructura.
+
+## Regla operativa de reautenticacion
+
+- Si el usuario ya hizo la autenticacion MCP de Supabase, no relanzar `codex mcp login supabase` por reflejo.
+- Hacer primero una sola verificacion del canal MCP ya autenticado.
+- Si esa verificacion falla con errores de refresh OAuth, callback o token no recargado, asumir bloqueo de sesion actual y no disparar una segunda confirmacion de navegador.
+- La recuperacion correcta es:
+  1. documentar el error exacto,
+  2. reiniciar la sesion de Codex si aplica,
+  3. solo despues relanzar un unico login si el usuario lo confirma o el bloqueo persiste.

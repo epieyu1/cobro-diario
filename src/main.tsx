@@ -1,7 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from '@/App.tsx'
-import { AppProviders } from '@/app/providers.tsx'
 import { registerServiceWorker } from '@/lib/pwa/register-service-worker.ts'
 import './index.css'
 
@@ -11,9 +10,6 @@ registerServiceWorker()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {/* Los providers globales viven aqui para que cualquier asistente vea el orden base de capas. */}
-    <AppProviders>
-      <App />
-    </AppProviders>
+    <App />
   </StrictMode>,
 )

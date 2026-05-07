@@ -7,7 +7,7 @@
       "url": "https://mcp.vercel.com"
     },
     "supabase": {
-      "url": "https://mcp.supabase.com/mcp"
+      "url": "https://mcp.supabase.com/mcp?project_ref=vmlxfbqezgjivesxahfe"
     }
   }
 }

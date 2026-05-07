@@ -5,6 +5,8 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
+// Este baseline busca que el repo falle temprano en errores obvios sin imponer
+// una capa de complejidad mayor mientras la app aun esta en fase fundacional.
 export default defineConfig([
   globalIgnores(['dist']),
   {
