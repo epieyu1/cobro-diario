@@ -8,8 +8,8 @@
 - Rama principal: `main`
 - Commit inicial publicado: `0261ccc` (`chore: bootstrap cobro diario foundation`)
 - Candidato local actual de preview: rama `preview-phase5-candidate-20260507`
-- Commit local actual del candidato: `e61dca4` (`feat: prepare phase 5 preview candidate`)
-- Estado actual: el candidato ya quedó congelado localmente, pero todavia no ha sido empujado a GitHub.
+- Commit local actual del candidato: `cb3d560` (`docs: record preview candidate branch`)
+- Estado actual: el candidato ya quedó empujado a GitHub y sigue trackeando `origin/preview-phase5-candidate-20260507`.
 
 ### Supabase CLI
 
@@ -80,11 +80,16 @@
 
 - la validación manual móvil de `BR-1` quedó diferida por decisión explícita de producto
 - Fase 4 puede tratarse como cerrada para el alcance activo con evidencia automatizada reproducible
-- Fase 5 deja de estar bloqueada por Fase 4 y queda en progreso con el primer despliegue completado.
+- Fase 5 deja de estar bloqueada por Fase 4 y queda en progreso con despliegue `preview` Git reproducible ya emitido.
 - URL de Producción: https://cobro-diario.vercel.app
-- URL de Preview: https://cobro-diario-eru6x6mu7-alexander-restrepo-epieyus-projects.vercel.app
+- URL de Preview inicial: https://cobro-diario-eru6x6mu7-alexander-restrepo-epieyus-projects.vercel.app
+- URL de Preview Git vigente (`2026-05-07`): https://cobro-diario-6gkgufjfr-alexander-restrepo-epieyus-projects.vercel.app
+- Alias Git del preview vigente: https://cobro-diario-git-pre-6576ff-alexander-restrepo-epieyus-projects.vercel.app
+- Rama desplegada para el preview vigente: `preview-phase5-candidate-20260507`
+- Commit candidato publicado para el preview vigente: `cb3d560`
 - El proyecto fue vinculado a la cuenta `epieyu1` y las variables de entorno públicas (`VITE_*`) fueron configuradas para todos los entornos.
-- El smoke test automatizado fue bloqueado por el WAF de Vercel; pendiente validación manual por el usuario.
+- La auditoría de Vercel confirmó presencia de `VITE_APP_NAME`, `VITE_DEFAULT_LOCALE`, `VITE_DEFAULT_CURRENCY`, `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY` en `Development`, `Preview` y `Production`, sin exponer sus valores.
+- El smoke del preview Git sigue pendiente antes de tratar esta URL como candidato operativo compartible.
 
 ### Criterio operativo de altas del `2026-05-07`
 
