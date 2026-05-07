@@ -8,7 +8,7 @@
 - Rama principal: `main`
 - Commit inicial publicado: `0261ccc` (`chore: bootstrap cobro diario foundation`)
 - Candidato local actual de preview: rama `preview-phase5-candidate-20260507`
-- Commit local actual del candidato: `cb3d560` (`docs: record preview candidate branch`)
+- Commit local actual del candidato: `68e664d` (`feat: tighten public hero runtime gating`)
 - Estado actual: el candidato ya quedó empujado a GitHub y sigue trackeando `origin/preview-phase5-candidate-20260507`.
 
 ### Supabase CLI
@@ -86,10 +86,31 @@
 - URL de Preview Git vigente (`2026-05-07`): https://cobro-diario-6gkgufjfr-alexander-restrepo-epieyus-projects.vercel.app
 - Alias Git del preview vigente: https://cobro-diario-git-pre-6576ff-alexander-restrepo-epieyus-projects.vercel.app
 - Rama desplegada para el preview vigente: `preview-phase5-candidate-20260507`
-- Commit candidato publicado para el preview vigente: `cb3d560`
+- Commit candidato publicado para el preview vigente: `68e664d`
 - El proyecto fue vinculado a la cuenta `epieyu1` y las variables de entorno públicas (`VITE_*`) fueron configuradas para todos los entornos.
 - La auditoría de Vercel confirmó presencia de `VITE_APP_NAME`, `VITE_DEFAULT_LOCALE`, `VITE_DEFAULT_CURRENCY`, `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY` en `Development`, `Preview` y `Production`, sin exponer sus valores.
 - El smoke del preview Git sigue pendiente antes de tratar esta URL como candidato operativo compartible.
+
+### Preview y protección SSO del `2026-05-07`
+
+- El deploy preview más reciente quedó `READY` desde `preview-phase5-candidate-20260507` en:
+  - URL directa: https://cobro-diario-hbojyq29d-alexander-restrepo-epieyus-projects.vercel.app
+  - alias operativo entregado por `vercel inspect`: https://cobro-diario-epieyu1-alexander-restrepo-epieyus-projects.vercel.app
+- `vercel project protection --format json` confirmó el bloqueo real del entorno:
+  - `ssoProtection.deploymentType = "all_except_custom_domains"`
+  - `gitForkProtection = true`
+- Consecuencia operativa:
+  - todo `*.vercel.app` del proyecto cae en `Vercel Security Checkpoint`,
+  - el smoke UI del preview sigue bloqueado por `HTTP/2 403` con `x-vercel-mitigated: challenge`,
+  - y hoy no existe un dominio custom conectado a este proyecto que evite ese challenge sin relajar la barrera perimetral.
+- `vercel domains ls` sí mostró dominios disponibles a nivel de cuenta (`syncro.skin`, `judithboutique.com`), pero no una asignación activa a `cobro-diario`.
+- La app no quedó reprobada por esto; el bloqueo es perimetral del deployment.
+- Revalidación funcional real posterior al deploy:
+  - `node scripts/phase4-auth-user.mjs smoke fase4.collector@cobrodiario.dev 123456 collector` volvió a pasar contra `LANDING`
+  - `npm run smoke:receipt-pdf -- fase4.playground@cobrodiario.dev 123456 PG-ELI-001` volvió a pasar, con:
+    - `paymentId = 67504aae-444d-46e4-a08d-ec8c3504653c`
+    - `receiptReference = PDF-PG-ELI-001-1778188715481`
+    - `outputPath = /var/folders/7q/rlhk14sx41z4r8pkzfbrpwzw0000gn/T/cobro-diario-receipt-smoke/recibo-pdf-pg-eli-001-1778188715481.pdf`
 
 ### Smoke operativo de preview del `2026-05-07`
 

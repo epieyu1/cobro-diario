@@ -304,6 +304,11 @@ Revisar:
 - si el smoke se está ejecutando con `PHASE4_SMOKE_VERCEL_BYPASS_SECRET`,
 - si la sesión usa una shareable preview link cuando no se permite el bypass automatizado.
 
+Señal operativa ya observada en este proyecto:
+
+- si `vercel project protection --format json` devuelve `ssoProtection.deploymentType = "all_except_custom_domains"`, todo `*.vercel.app` del proyecto seguirá detrás de `Vercel Security Checkpoint`,
+- en ese estado el smoke UI del preview no puede cerrarse solo con la URL de preview; hace falta un `custom domain` conectado al proyecto o una vía autorizada de bypass/shareable preview link para la sesión de smoke.
+
 Referencia:
 
 - `scripts/phase4-mobile-smoke.mjs`
