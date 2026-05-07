@@ -60,6 +60,7 @@ en desarrollo con React `StrictMode`, cerrar Dexie en el cleanup del efecto base
 
 - Si no hay sesion, la app no intenta bootstrap remoto.
 - Si hay sesion pero la red esta caida, se mantiene solo la vista local.
+- Si la sesion existe pero el bootstrap remoto resuelve `workspace.profile = undefined`, la shell no debe fingir experiencia de cobrador: bloquea cartera, cobro y reportes hasta alinear `Auth + public.profiles`.
 - Si el `profiles.role` remoto no coincide con el claim `app_metadata.role` del JWT persistido, la app fuerza `refreshSession()` antes de leer cartera para que RLS y shell local usen el mismo rol efectivo.
 - Si hay items pendientes en la cola, primero se ejecutan `flushPaymentSyncQueue()` y `flushCollectionActionSyncQueue()`.
 - Si despues del flush quedan pendientes o fallidos, la app bloquea el bootstrap remoto y conserva el estado local.
@@ -91,6 +92,7 @@ esta vista de rutas ya no debe contradecir PostgreSQL: `routeLabel` vigente lleg
 - Sin entorno listo, el drawer solo expone configuración y arquitectura; no debe fingir login, cartera ni acciones de cobro.
 - Durante bootstrap, el drawer solo expone estado y contexto del arranque local; no debe insinuar que la shell operativa ya está lista.
 - Sin sesión, el drawer público solo ofrece acceso al login, reglas operativas y arquitectura; no debe fingir cartera ni acciones de cobro.
+- Con sesión Auth pero sin perfil remoto alineado, el drawer ya no reutiliza la navegación de cobrador: solo expone diagnóstico, reintento y cierre de sesión.
 - Ese mismo estado público ya no reutiliza el hero autenticado: las acciones `Actualizar` / `Nuevo Crédito`, las métricas de cartera y la tira `status-strip` solo aparecen con sesión activa, para no presentar indicadores de sync/cartera antes de que Auth y el bootstrap remoto confirmen el contexto real.
 - Con sesión activa, el mismo menú hamburguesa expone `Cartera`, `Detalle` y `Operacion` sin depender de una barra inferior fija.
 - La opción `Operacion` del drawer ya no depende de entrar primero a otro panel: abre una `operations-sheet` role-aware.
@@ -111,6 +113,7 @@ esta vista de rutas ya no debe contradecir PostgreSQL: `routeLabel` vigente lleg
 - En el menú operativo, la entrada `management` ahora cambia su copy por rol: `collector` ve `Visita de Campo`, mientras `admin` ve `Cobradores`, porque ese pane ya materializa altas de cobradores y la misma bitácora de visita.
 - `collector` sigue viendo solo su propia cartera operativa.
 - `admin` reutiliza la misma shell, pero ahora con una cartera operativa agregada sobre los rows que RLS ya le permite leer; el hero, la lista y la ruta sí pueden incluir préstamos de otros cobradores.
+- Si una cuenta creada manualmente en Supabase aún no fue alineada como `admin`, el hero autenticado cambia a estado bloqueado y solo deja `Revisar` / `Cerrar sesión`; esto evita degradar la experiencia a un falso `collector`.
 - El panel `Reportes` se carga de forma diferida para no reabrir el presupuesto del shell inicial y usa la misma gramática responsive del resto de la hoja operativa.
 - En desktop la misma fuente de verdad se expande a grilla y la hoja operativa deja de ser overlay para mostrarse como panel persistente.
 

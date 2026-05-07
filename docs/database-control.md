@@ -65,6 +65,28 @@ Salvedad:
 - los advisors posteriores no dejaron `WARN` o `ERROR` nuevos del dominio operativo por este cambio,
 - este RPC debe revalidarse cada vez que cambie el shape requerido por GoTrue para usuarios creados por SQL, porque el login depende de que tokens y strings criticos no queden en `NULL`.
 
+## Estado del alta manual de administradores
+
+Estado validado en `LANDING` al `2026-05-07`:
+
+- existe una implementacion versionada en `supabase/migrations/20260507214642_phase7_manual_admin_profile_alignment.sql`,
+- el helper propuesto es `private.align_manual_admin_account(uuid, text, text)`,
+- y la compuerta dedicada ya vive en `supabase/tests/phase7_admin_manual_profile_gate.sql`.
+
+Alcance de esa implementacion:
+
+- mantiene el principio de `least privilege`: `private.current_app_role()` sigue degradando cualquier claim inesperado a `collector`,
+- evita triggers sobre `auth.users` para no convertir una alta incompleta en una promoción automática a `admin`,
+- alinea `auth.users.raw_app_meta_data.role = 'admin'`, `auth.users.raw_user_meta_data.full_name` y `public.profiles` en un único write path explícito,
+- y reactiva perfiles `admin` previamente degradados o inactivos sin abrir DML directo del cliente sobre `public.profiles`.
+
+Salvedad:
+
+- `Authentication > Users > Add User` sigue siendo insuficiente por sí solo; el helper es el paso obligatorio para que la cuenta quede operativa como administrador,
+- la compuerta remota ya probó que `authenticated` no puede ejecutar el helper,
+- la compuerta remota también ya probó alta válida desde Auth huérfano, rechazo por nombre faltante y upgrade seguro desde perfil `collector`,
+- y los advisors posteriores no dejaron `WARN` o `ERROR` nuevos del dominio operativo; solo persiste `auth_leaked_password_protection` como aviso externo al repo.
+
 ## Estado de OR-2 de originacion
 
 Estado validado en `LANDING` al `2026-05-06`:

@@ -162,6 +162,7 @@ export type LocalSetting = {
 
 // Este perfil alimenta alcance local y UX.
 // No reemplaza claims de Auth ni autorizacion real del backend.
+// Si falta por completo, la shell debe bloquear operacion hasta alinear Auth y public.profiles.
 export type SessionProfile = {
   id: string
   role: CollectorRole

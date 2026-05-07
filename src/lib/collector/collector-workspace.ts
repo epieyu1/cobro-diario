@@ -435,6 +435,9 @@ async function refreshSessionRoleClaimIfNeeded(
   profile: RemoteProfileRow | null,
 ) {
   if (!profile) {
+    // Una cuenta Auth sin fila en public.profiles no puede reconciliar role claim aqui.
+    // La shell web debe tratar ese caso como bloqueo operativo y resolverlo con
+    // alineacion manual de la cuenta, no inventando un fallback local de privilegios.
     return
   }
 

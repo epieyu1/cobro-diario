@@ -15,6 +15,7 @@ import {
   type CollectorRouteBoard,
   type OperationalLoanCard,
 } from '@/lib/collector/collector-route-board.ts'
+import { shouldBlockAuthenticatedWorkspaceForProfileAlignment } from '@/lib/auth/profile-alignment.ts'
 import { resolveOperationalRoleCapabilities } from '@/lib/auth/role-guards.ts'
 import type { LocalInstallment, LocalPayment } from '@/lib/db/local-db.ts'
 import { env, hasSupabaseEnv } from '@/lib/env.ts'
@@ -678,6 +679,15 @@ function App() {
     [workspace?.profile],
   )
   const canAccessOrigination = roleCapabilities.canAccessOrigination
+  // Fuente de verdad: Auth y public.profiles deben converger antes de abrir la shell operativa.
+  // Si la cuenta existe solo en Auth (por ejemplo, un admin creado manualmente sin alinear perfil),
+  // la UI no debe caer silenciosamente a una experiencia "collector" sin permisos reales.
+  const isProfileAlignmentBlocked = shouldBlockAuthenticatedWorkspaceForProfileAlignment({
+    authReady,
+    dbReady,
+    sessionUserId,
+    workspace,
+  })
 
   const runtimeCards = useMemo(
     () => [
@@ -885,6 +895,76 @@ function App() {
   }
 
   function renderMobileNavigationDrawerContent() {
+    if (mobileShellMode === 'authenticated' && isProfileAlignmentBlocked) {
+      return (
+        <>
+          <div className="mobile-navigation-drawer-header">
+            <div>
+              <p className="section-kicker">Centro móvil</p>
+              <h2>Perfil operativo pendiente</h2>
+              <p className="muted-copy">
+                La sesión ya existe, pero falta alinear el perfil remoto antes de operar.
+              </p>
+            </div>
+
+            <button
+              className="button ghost mobile-navigation-close"
+              onClick={() => setIsMobileMenuOpen(false)}
+              type="button"
+            >
+              Cerrar
+            </button>
+          </div>
+
+          <div className="mobile-navigation-group">
+            <p className="section-kicker">Siguiente paso</p>
+            <div className="mobile-navigation-list">
+              <article className="mobile-navigation-button">
+                <strong>Cuenta sin perfil remoto</strong>
+                <span>
+                  Administrador manual: alinear Auth y `public.profiles` antes de reingresar.
+                </span>
+              </article>
+              <article className="mobile-navigation-button">
+                <strong>Alta de cobrador</strong>
+                <span>
+                  Los cobradores deben provisionarse desde la web.
+                </span>
+              </article>
+            </div>
+          </div>
+
+          <div className="mobile-navigation-group">
+            <p className="section-kicker">Acciones de sesión</p>
+            <div className="mobile-navigation-actions">
+              <button
+                className="button primary"
+                disabled={!dbReady || !authReady || isRefreshing}
+                onClick={() => {
+                  setIsMobileMenuOpen(false)
+                  void handleRefreshWorkspace()
+                }}
+                type="button"
+              >
+                {isRefreshing ? 'Revisando...' : 'Revisar'}
+              </button>
+              <button
+                className="button secondary"
+                disabled={isSigningOut}
+                onClick={() => {
+                  setIsMobileMenuOpen(false)
+                  void handleSignOut()
+                }}
+                type="button"
+              >
+                {isSigningOut ? 'Cerrando...' : 'Cerrar sesión'}
+              </button>
+            </div>
+          </div>
+        </>
+      )
+    }
+
     if (mobileShellMode === 'authenticated') {
       return (
         <>
@@ -1493,8 +1573,17 @@ function App() {
         <div className="hero-copy">
           {sessionUserId ? (
             <>
-              <p className="eyebrow" aria-hidden="true">Resumen operativo</p>
-              <h2 id="hero-heading">Panel de Control</h2>
+              <p className="eyebrow" aria-hidden="true">
+                {isProfileAlignmentBlocked ? 'Acceso bloqueado' : 'Resumen operativo'}
+              </p>
+              <h2 id="hero-heading">
+                {isProfileAlignmentBlocked ? 'Perfil operativo pendiente' : 'Panel de Control'}
+              </h2>
+              {isProfileAlignmentBlocked && (
+                <p className="lead">
+                  La cuenta aún no tiene el perfil remoto mínimo para operar.
+                </p>
+              )}
             </>
           ) : (
             <>
@@ -1516,9 +1605,18 @@ function App() {
                 onClick={handleRefreshWorkspace}
                 disabled={!dbReady || !authReady || isRefreshing}
               >
-                {isRefreshing ? 'Actualizando...' : 'Actualizar'}
+                {isRefreshing ? 'Revisando...' : isProfileAlignmentBlocked ? 'Revisar' : 'Actualizar'}
               </button>
-              {canAccessOrigination && (
+              {isProfileAlignmentBlocked ? (
+                <button
+                  className="button secondary"
+                  disabled={isSigningOut}
+                  onClick={() => void handleSignOut()}
+                  type="button"
+                >
+                  {isSigningOut ? 'Cerrando...' : 'Cerrar sesión'}
+                </button>
+              ) : canAccessOrigination && (
                 <button
                   className="button secondary"
                   onClick={() => {
@@ -1534,7 +1632,7 @@ function App() {
           )}
         </div>
 
-          {sessionUserId && dashboardMetrics.length > 0 && (
+          {sessionUserId && !isProfileAlignmentBlocked && dashboardMetrics.length > 0 && (
             <div className="hero-metrics" role="region" aria-label="Indicadores clave">
               {dashboardMetrics.map((metric) => (
                 <article key={metric.label} className={`metric-card ${metric.tone}`}>
@@ -1548,7 +1646,7 @@ function App() {
 
       {/* La tira de estado sigue leyendo runtime real, pero solo se renderiza con sesion activa
           para no duplicar en la portada publica indicadores que dependen de cartera/sync autenticados. */}
-      {sessionUserId && (
+      {sessionUserId && !isProfileAlignmentBlocked && (
         <section className="status-strip" aria-label="Estado del sistema">
           {runtimeCards.map((card) => (
             <article key={card.label} className={`status-pill ${card.tone}`}>
@@ -1652,6 +1750,41 @@ function App() {
               <li>Validación de celdas por RLS.</li>
               <li>Identidad de dispositivo única por cobro.</li>
             </ul>
+          </article>
+        </section>
+      ) : isProfileAlignmentBlocked ? (
+        <section className="content-grid">
+          <article id="profile-alignment-panel" className="panel">
+            <header className="panel-heading">
+              <p className="section-kicker">Acceso bloqueado</p>
+              <h2>Perfil operativo pendiente</h2>
+            </header>
+            <p className="muted-copy">
+              La sesión existe, pero no hay un perfil remoto alineado.
+            </p>
+            <ul className="list compact">
+              <li>Administrador manual: alinear `app_metadata.role` y `public.profiles` en Supabase.</li>
+              <li>Cobrador: crear la cuenta desde la web con el flujo seguro.</li>
+              <li>Después, reingresar para refrescar el JWT.</li>
+            </ul>
+            <div className="hero-actions">
+              <button
+                className="button primary"
+                disabled={!dbReady || !authReady || isRefreshing}
+                onClick={handleRefreshWorkspace}
+                type="button"
+              >
+                {isRefreshing ? 'Revisando...' : 'Revisar'}
+              </button>
+              <button
+                className="button secondary"
+                disabled={isSigningOut}
+                onClick={() => void handleSignOut()}
+                type="button"
+              >
+                {isSigningOut ? 'Cerrando...' : 'Cerrar sesión'}
+              </button>
+            </div>
           </article>
         </section>
       ) : (

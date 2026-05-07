@@ -63,41 +63,14 @@ Este es el único caso donde el runbook acepta alta manual directa fuera de la a
 
 1. Crear el usuario en `Supabase Dashboard > Authentication > Users`.
 2. Copiar el `UUID` del usuario creado.
-3. Ejecutar en `SQL Editor` la alineación completa de Auth y perfil:
+3. Ejecutar en `SQL Editor` el helper versionado de alineación:
 
 ```sql
-begin;
-
-update auth.users
-set
-  raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || jsonb_build_object('role', 'admin'),
-  raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb) || jsonb_build_object('full_name', 'Nombre Administrador'),
-  updated_at = timezone('utc', now())
-where id = 'UUID_DEL_USUARIO';
-
-insert into public.profiles (
-  id,
-  role,
-  full_name,
-  phone,
-  active
-)
-values (
+select private.align_manual_admin_account(
   'UUID_DEL_USUARIO',
-  'admin'::public.app_role,
   'Nombre Administrador',
-  '3001234567',
-  true
-)
-on conflict (id) do update
-set
-  role = excluded.role,
-  full_name = excluded.full_name,
-  phone = excluded.phone,
-  active = excluded.active,
-  updated_at = timezone('utc', now());
-
-commit;
+  '3001234567'
+);
 ```
 
 4. Pedir al usuario cerrar sesión y volver a entrar.
@@ -125,6 +98,7 @@ where id = 'UUID_DEL_USUARIO';
 - Si `raw_app_meta_data.role` no queda en `admin`, RLS seguirá tratando al usuario como `collector`.
 - Si falta la fila en `public.profiles`, la shell puede no resolver bien el perfil operativo.
 - Si `active = false`, el usuario puede autenticarse pero quedará bloqueado en flujos críticos.
+- `Add User` por sí solo no crea una cuenta administrativa operativa; la alineación es un paso obligatorio.
 
 ## Alta de cobradores desde la app web
 

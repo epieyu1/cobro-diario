@@ -1366,6 +1366,44 @@ En cualquier cierre relacionado con UI, agregar o actualizar:
 - Pendiente:
   - la validación manual móvil sigue diferida por decisión de producto.
 
+### Alineación manual de administradores y bloqueo de shell sin perfil remoto
+
+- Fecha: `2026-05-07`
+- Alcance: resolver el alta manual de administradores sin relajar el fallback seguro a `collector`, agregando un helper SQL explícito y una barrera visible en la shell web para cuentas Auth sin `public.profiles`
+- Archivos tocados:
+  - `src/App.tsx`
+  - `src/lib/auth/profile-alignment.ts`
+  - `src/lib/auth/profile-alignment.test.ts`
+  - `src/lib/collector/collector-workspace.ts`
+  - `src/lib/db/local-db.ts`
+  - `package.json`
+  - `supabase/migrations/20260507214642_phase7_manual_admin_profile_alignment.sql`
+  - `supabase/tests/phase7_admin_manual_profile_gate.sql`
+  - `docs/deployment-runbook.md`
+  - `docs/database-control.md`
+  - `docs/operational-ui.md`
+  - `docs/session-handoff.md`
+  - `docs/audit-report.md`
+- Comandos:
+  - `npm run test:phase5`
+  - `npm run check`
+  - `npm run test:perf`
+  - `git diff --check`
+  - `apply_migration(phase7_manual_admin_profile_alignment)`
+  - `execute_sql(supabase/tests/phase7_admin_manual_profile_gate.sql)`
+  - `list_migrations`
+  - `get_advisors(security)`
+  - `get_advisors(performance)`
+- Resultado:
+  - el repo ya expone `private.align_manual_admin_account(uuid, text, text)` como write path explícito para cuentas creadas con `Auth > Add User`,
+  - la compuerta remota validó que un JWT sin `role = admin` sigue degradando a `collector`, que `authenticated` no puede ejecutar el helper y que la alineación correcta sí materializa `auth.users.raw_app_meta_data.role = admin` más `public.profiles.active = true`,
+  - la shell web ya no cae silenciosamente en una experiencia “collector” cuando falta `workspace.profile`: muestra un estado bloqueado, deja `Revisar` / `Cerrar sesión` y evita fingir cartera, cobro o reportes,
+  - la mejora quedó cubierta por prueba local dedicada (`profile-alignment.test.ts`) sin reabrir el presupuesto del shell,
+  - y `LANDING` no dejó `WARN` o `ERROR` nuevos por este corte; solo persiste `auth_leaked_password_protection`.
+- Pendiente:
+  - la validación manual móvil sigue diferida por decisión de producto,
+  - y el smoke UI sobre preview publicado sigue dependiendo de la barrera perimetral de Vercel, no de esta lógica de Auth/perfil.
+
 ## Checklist operativo para futuros cierres
 
 ### Arquitectura de estilos

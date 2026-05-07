@@ -32,6 +32,24 @@
 - `VITE_SUPABASE_PUBLISHABLE_KEY` configurado
 - `npm run check` pasó después de la configuración local
 
+### Alineación manual de administradores del `2026-05-07`
+
+- `LANDING` ya tiene aplicada `phase7_manual_admin_profile_alignment`
+- el helper operativo nuevo es `private.align_manual_admin_account(uuid, text, text)`
+- `supabase/tests/phase7_admin_manual_profile_gate.sql` ya pasó por MCP con `ROLLBACK`
+- el helper deja el flujo explícito así:
+  - `Auth > Add User`
+  - `select private.align_manual_admin_account('UUID', 'Nombre', '3001234567')`
+  - cerrar sesión y volver a entrar para refrescar el JWT
+- la compuerta remota ya validó:
+  - fallback seguro a `collector` cuando el JWT no trae `role = admin`
+  - denegación del helper para `authenticated`
+  - alineación correcta de `auth.users` + `public.profiles`
+  - error `admin_full_name_required` cuando la cuenta manual no trae nombre suficiente
+  - upgrade seguro desde un perfil previo `collector`
+- `src/App.tsx` ya bloquea la shell operativa cuando existe sesión Auth pero falta `workspace.profile`; en ese estado solo deja `Revisar` y `Cerrar sesión`
+- `src/lib/auth/profile-alignment.ts` fija la compuerta local de ese estado y `src/lib/auth/profile-alignment.test.ts` ya entra en `npm run test:phase5`
+
 ### MCP de Supabase
 
 - `.mcp.json` del repo apunta a `https://mcp.supabase.com/mcp?project_ref=vmlxfbqezgjivesxahfe`
