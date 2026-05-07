@@ -98,9 +98,16 @@ esta vista de rutas ya no debe contradecir PostgreSQL: `routeLabel` vigente lleg
 - Para `admin`, la pestaña `Gestion` ya no se limita a novedades de visita: ahora expone una vista separada de cobradores activos y su alta rápida sin depender del wizard de originación.
 - Esa vista `Gestion -> Cobradores activos` y el selector `Originacion -> Deudor -> Cobrador asignado` comparten la misma fuente de verdad: `public.profiles` filtrado por `role = collector` y `active = true`.
 - La selección de un préstamo desde cartera mueve al panel `detail` para reducir pasos táctiles.
+- La cartera ahora expone un selector desplegable de salto rápido por cliente/préstamo, acotado a la ruta visible y con búsqueda interna por nombre, documento, consecutivo o ruta.
+- Ese selector no reemplaza el filtro libre principal: el `input` sigue siendo la fuente de búsqueda textual de la lista, mientras el selector sirve para abrir un expediente puntual sin barrer toda la cartera a mano.
+- Ese salto rápido vive en un chunk diferido para no reabrir el presupuesto del shell inicial; la mejora de navegación no debe volver a empujar el `entry bundle` fuera de presupuesto.
+- Con ese selector activo, la cartera ya no renderiza debajo una lista duplicada de usuarios/clientes; la selección primaria del expediente vive en el desplegable y el detalle se resuelve en el pane `detail`.
+- El filtro de zonas ahora reutiliza el mismo patrón de selector buscable que el salto por cliente, pero sigue leyendo cada opción y su conteo desde `routeBoard.routes`.
+- Ese selector de zonas queda como control único del filtro, para que el conteo por zona no se duplique en dos UIs distintas ni vuelva a castigar el presupuesto del shell.
 - El detalle ofrece saltos directos a cobro y gestión.
 - El encabezado operativo ya no promete acciones que el rol no puede ejecutar: el CTA `Originar prestamo` solo se muestra a `admin`.
 - `collector` ya no ve accesos visibles de originación o reportes; el backend sigue siendo la autoridad final, pero la UI no debe insinuar permisos inexistentes.
+- En el menú operativo, la entrada `management` ahora cambia su copy por rol: `collector` ve `Visita de Campo`, mientras `admin` ve `Cobradores`, porque ese pane ya materializa altas de cobradores y la misma bitácora de visita.
 - `collector` sigue viendo solo su propia cartera operativa.
 - `admin` reutiliza la misma shell, pero ahora con una cartera operativa agregada sobre los rows que RLS ya le permite leer; el hero, la lista y la ruta sí pueden incluir préstamos de otros cobradores.
 - El panel `Reportes` se carga de forma diferida para no reabrir el presupuesto del shell inicial y usa la misma gramática responsive del resto de la hoja operativa.
@@ -217,7 +224,7 @@ no se debe dejar cartera ni pagos pendientes de un cobrador visibles para otro u
 - `src/index.css` sigue siendo la fuente de verdad de tokens y primitivas visuales.
 - `.input` ya es la primitiva unificada para login, búsqueda y registro de cobro.
 - `.money-input` extiende esa primitiva para alinear montos a la derecha sin cambiar el contrato contable de 2 decimales.
-- Las clases de shell operativa (`.ops-grid`, `.route-chip`, `.loan-row`, `.queue-row`, `.receipt-card`) viven en el mismo archivo para evitar estilos dispersos o inline.
+- Las clases de shell operativa (`.ops-grid`, `.route-filter-select`, `.queue-row`, `.receipt-card`) viven en el mismo archivo para evitar estilos dispersos o inline.
 - La gestión de visita usa `management-card`, `management-panel` y `management-actions` en la misma capa compartida.
 
 ### Perfil faltante

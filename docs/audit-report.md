@@ -1274,6 +1274,78 @@ En cualquier cierre relacionado con UI, agregar o actualizar:
   - el smoke real final contra `LANDING` registró un pago, leyó el comprobante confirmado por RPC y escribió un archivo PDF válido en `/var/folders/7q/rlhk14sx41z4r8pkzfbrpwzw0000gn/T/cobro-diario-receipt-smoke/recibo-pdf-pg-eli-001-1778175551427.pdf`,
   - y los seeds `phase4_landing_playground` / `phase4_landing_smoke` ya no quedan atrasados frente al esquema actual de originación ni frente a los saldos por componente de `installments`.
 
+### Salto rápido de cartera y copy operativo compactado
+
+- Fecha: `2026-05-07`
+- Alcance: reconstruir correctamente la mejora de navegación sobre cartera y menú sin reintroducir residuos `untracked`, manteniendo el contrato actual del pane `management` y el presupuesto del shell mobile-first
+- Archivos tocados:
+  - `src/App.tsx`
+  - `src/lib/ui/j.tsx`
+  - `src/lib/ui/searchable-select.tsx`
+  - `src/lib/ui/searchable-select.css`
+  - `docs/operational-ui.md`
+  - `docs/audit-report.md`
+- Comandos:
+  - `npm run check`
+  - `npm run test:phase4`
+  - `npm run test:perf`
+  - `git diff --check`
+  - `rg -n "style=\\{\\{" src --glob "*.tsx" --glob "*.jsx"`
+- Resultado:
+  - la cartera ahora ofrece un selector desplegable de salto rápido acotado a la ruta visible, con búsqueda interna por cliente, documento, consecutivo o ruta,
+  - al elegir un expediente, la UI limpia el filtro libre anterior y mueve el foco operativo al panel `detail` sin crear una segunda fuente de verdad,
+  - el pane `management` ahora ajusta su copy visible por rol: `collector` conserva `Visita de Campo`, mientras `admin` ve `Cobradores`,
+  - el selector quedó diferido en un chunk propio (`j.*`) para no volver a castigar el `entry bundle`,
+  - y el shell comprimió copy estático no crítico para recuperar el presupuesto sin tocar lógica financiera, sync ni permisos.
+- Pendiente:
+  - la validación manual móvil sigue diferida por decisión de producto,
+  - y no se abrieron cambios de backend ni de seguridad porque esta mejora solo toca navegación y copy compartido.
+
+### Desplegable móvil para zonas con conteo por ruta
+
+- Fecha: `2026-05-07`
+- Alcance: agregar una lista desplegable mobile-first para filtrar zonas sin tocar la lógica remota de rutas ni romper la vista existente de chips en pantallas amplias
+- Archivos tocados:
+  - `src/App.tsx`
+  - `src/index.css`
+  - `docs/operational-ui.md`
+  - `docs/audit-report.md`
+- Comandos:
+  - `npm run check`
+  - `npm run test:phase4`
+  - `npm run test:perf`
+  - `git diff --check`
+  - `rg -n "style=\\{\\{" src --glob "*.tsx" --glob "*.jsx"`
+- Resultado:
+  - la zona ahora usa un selector buscable alineado con el patrón del selector de clientes,
+  - cada opción muestra la zona y su cantidad de préstamos usando el mismo `routeBoard.routes` que ya alimenta el filtro operativo,
+  - el `selectedRouteLabel` sigue siendo la única fuente de estado del filtro,
+  - y la zona quedó unificada en un solo control desplegable para no mantener dos UIs con el mismo conteo.
+- Pendiente:
+  - la validación manual móvil sigue diferida por decisión de producto.
+
+### Selector único de clientes sin lista duplicada
+
+- Fecha: `2026-05-07`
+- Alcance: retirar la lista visible duplicada de usuarios/clientes debajo del selector buscable, manteniendo el detalle del expediente como destino principal de la selección
+- Archivos tocados:
+  - `src/App.tsx`
+  - `src/index.css`
+  - `docs/operational-ui.md`
+  - `docs/audit-report.md`
+- Comandos:
+  - `npm run check`
+  - `npm run test:phase4`
+  - `npm run test:perf`
+  - `git diff --check`
+  - `rg -n "style=\\{\\{" src --glob "*.tsx" --glob "*.jsx"`
+- Resultado:
+  - el selector buscable de clientes quedó como fuente primaria de elección del expediente,
+  - la cartera ya no repite debajo una lista visible del mismo `filteredLoanCards`,
+  - y se eliminaron las clases `.loan-list` / `.loan-row*` que solo existían para esa duplicación visual.
+- Pendiente:
+  - la validación manual móvil sigue diferida por decisión de producto.
+
 ## Checklist operativo para futuros cierres
 
 ### Arquitectura de estilos

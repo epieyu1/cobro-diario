@@ -14,7 +14,6 @@ import {
 import {
   type CollectorRouteBoard,
   type OperationalLoanCard,
-  type OperationalPriority,
 } from '@/lib/collector/collector-route-board.ts'
 import { resolveOperationalRoleCapabilities } from '@/lib/auth/role-guards.ts'
 import type { LocalInstallment, LocalPayment } from '@/lib/db/local-db.ts'
@@ -52,34 +51,28 @@ const COLLECTION_ACTION_OUTCOMES: CollectionActionOutcome[] = [
   'return_visit',
   'visited_no_payment',
 ]
-const OriginationWizardPanel = lazy(async () => {
-  const module = await import('@/lib/origination/origination-wizard-panel.tsx')
-
-  return {
+const OriginationWizardPanel = lazy(() =>
+  import('@/lib/origination/origination-wizard-panel.tsx').then((module) => ({
     default: module.OriginationWizardPanel,
-  }
-})
-const CollectorManagementPanel = lazy(async () => {
-  const module = await import('@/lib/origination/collector-management-panel.tsx')
-
-  return {
+  })),
+)
+const CollectorManagementPanel = lazy(() =>
+  import('@/lib/origination/collector-management-panel.tsx').then((module) => ({
     default: module.CollectorManagementPanel,
-  }
-})
-const ReceiptPanel = lazy(async () => {
-  const module = await import('@/lib/receipts/receipt-panel.tsx')
-
-  return {
+  })),
+)
+const ReceiptPanel = lazy(() =>
+  import('@/lib/receipts/receipt-panel.tsx').then((module) => ({
     default: module.ReceiptPanel,
-  }
-})
-const ReportPanel = lazy(async () => {
-  const module = await import('@/lib/reports/report-panel.tsx')
-
-  return {
+  })),
+)
+const ReportPanel = lazy(() =>
+  import('@/lib/reports/report-panel.tsx').then((module) => ({
     default: module.ReportPanel,
-  }
-})
+  })),
+)
+const J = lazy(() => import('@/lib/ui/j.tsx'))
+const Z = lazy(() => import('@/lib/ui/z.tsx'))
 
 const emptyQueueSnapshot: SyncQueueSnapshot = {
   failed: 0,
@@ -358,19 +351,19 @@ function App() {
       }
 
       if (!supabaseClient || !remoteSource) {
-        setSyncMessage('El cliente de Supabase no está disponible en este navegador.')
+        setSyncMessage('Supabase no está disponible en este navegador.')
         return
       }
 
       if (!isOnline) {
-        setSyncMessage('Modo offline. Se usa la cartera guardada en IndexedDB.')
+        setSyncMessage('Modo offline. Se usa la cartera guardada.')
         return
       }
 
       let nextQueueSnapshot = await runtime.getSyncQueueSnapshot(runtime.localDb)
 
       if (nextQueueSnapshot.pending > 0 && syncTransport && collectionActionSyncTransport) {
-        setSyncMessage('Sincronizando cobros y gestiones pendientes antes de refrescar cartera...')
+        setSyncMessage('Sincronizando pendientes antes de refrescar cartera...')
 
         await runtime.flushPaymentSyncQueue(syncTransport, {
           db: runtime.localDb,
@@ -385,7 +378,7 @@ function App() {
 
       if (nextQueueSnapshot.failed > 0 || nextQueueSnapshot.pending > 0 || nextQueueSnapshot.processing > 0) {
         setSyncMessage(
-          'La cola aun tiene divergencias. Se conserva la vista local hasta resolver los cobros o gestiones pendientes o fallidos.',
+          'La cola sigue divergente. Se conserva la vista local hasta resolver pendientes o fallidos.',
         )
         return
       }
@@ -459,16 +452,16 @@ function App() {
 
   const filteredLoanCards = useMemo<OperationalLoanCard[]>(() => {
     const normalizedSearch = deferredSearchTerm.trim().toLowerCase()
-    const routeScopedCards =
+    const routeScopedLoanCards =
       resolvedSelectedRouteLabel === 'all'
         ? routeBoard.cards
         : routeBoard.cards.filter((loanCard) => loanCard.routeLabel === resolvedSelectedRouteLabel)
 
     if (!normalizedSearch) {
-      return routeScopedCards
+      return routeScopedLoanCards
     }
 
-    return routeScopedCards.filter((loanCard) => {
+    return routeScopedLoanCards.filter((loanCard) => {
       const searchParts = [
         loanCard.customer.fullName,
         loanCard.customer.governmentId,
@@ -506,7 +499,6 @@ function App() {
     () => filteredLoanCards.find((loanCard) => loanCard.loan.id === resolvedSelectedLoanId) ?? null,
     [filteredLoanCards, resolvedSelectedLoanId],
   )
-
   const paymentPreview = useMemo<PaymentPreviewState | null>(() => {
     if (!runtime || !selectedLoan || !amountInput.trim()) {
       return null
@@ -754,21 +746,21 @@ function App() {
         label: string
       }> = [
         {
-          description: selectedLoan ? 'Registrar pago por antigüedad' : 'Selecciona un préstamo',
+          description: selectedLoan ? 'Cobro contractual' : 'Selecciona un préstamo',
           key: 'payment',
           label: 'Recaudo',
         },
         {
           description: roleCapabilities.canAccessCollectorManagement
-            ? 'Cobradores y gestiones de visita'
+            ? 'Altas y visitas'
             : selectedLoan?.latestCollectionAction
               ? describeCollectionActionOutcome(runtime, selectedLoan.latestCollectionAction.outcome)
-              : 'Registrar gestión de visita',
+              : 'Registrar visita',
           key: 'management',
-          label: 'Visita de Campo',
+          label: roleCapabilities.canAccessCollectorManagement ? 'Cobradores' : 'Visita de Campo',
         },
         {
-          description: receiptPayment ? describeReceiptPaneStatus(receiptPayment) : 'Último recibo local',
+          description: receiptPayment ? describeReceiptPaneStatus(receiptPayment) : 'Recibo local',
           key: 'receipt',
           label: 'Comprobante',
         },
@@ -776,7 +768,7 @@ function App() {
 
       if (roleCapabilities.canAccessOperationalReports) {
         nextPaneItems.push({
-          description: 'Cartera, mora, cobro del día y sincronización local',
+          description: 'Cartera, mora y sincronización',
           key: 'reports',
           label: 'Indicadores',
         })
@@ -790,14 +782,14 @@ function App() {
 
       if (canAccessOrigination) {
         nextPaneItems.push({
-          description: 'Registro completo en Cobro Diario',
+          description: 'Nuevo préstamo',
           key: 'origination',
           label: 'Nuevo Crédito',
         })
       }
 
       nextPaneItems.push({
-        description: 'Contrato y restricciones',
+        description: 'Políticas',
         key: 'rules',
         label: 'Políticas',
       })
@@ -865,10 +857,10 @@ function App() {
     mobileShellMode === 'authenticated'
       ? currentMobileNavigationItem.description
       : mobileShellMode === 'environment'
-        ? 'Configuración pública, reglas y arquitectura visibles desde el primer toque.'
+        ? 'Configuración, reglas y arquitectura desde el primer toque.'
         : mobileShellMode === 'bootstrap'
-          ? 'El menú ya está disponible mientras IndexedDB y la sesión persistida terminan de abrir.'
-          : 'Acceso, reglas y arquitectura accesibles desde el mismo patrón móvil.'
+          ? 'El menú ya está listo mientras termina el arranque local.'
+          : 'Acceso, reglas y arquitectura en el mismo patrón móvil.'
 
   function handleToggleMobileMenu() {
     setIsMobileMenuOpen((previousOpen) => !previousOpen)
@@ -1156,7 +1148,7 @@ function App() {
     event.preventDefault()
 
     if (!runtime || !supabaseClient) {
-      setRuntimeError('El cliente de Supabase no está configurado en este entorno.')
+      setRuntimeError('Supabase no está configurado en este entorno.')
       return
     }
 
@@ -1176,6 +1168,15 @@ function App() {
     } finally {
       setIsSigningIn(false)
     }
+  }
+
+  function handleSelectLoanFromQuickSearch(loanId: string) {
+    // Esta seleccion reutiliza la cartera ya visible por ruta.
+    // El selector hace su propia busqueda interna, asi que limpiamos el texto libre
+    // para no dejar el expediente elegido oculto por un filtro viejo.
+    setSearchTerm('')
+    setSelectedLoanId(loanId)
+    setActiveMobilePane('detail')
   }
 
   async function handleRefreshWorkspace() {
@@ -1326,7 +1327,7 @@ function App() {
 
     if (queueSnapshot.pending > 0 || queueSnapshot.failed > 0 || queueSnapshot.processing > 0) {
       setRuntimeError(
-        'No cierres sesión con eventos sin resolver. Sincroniza o corrige la cola para no perder trazabilidad local.',
+        'No cierres sesión con eventos sin resolver. Corrige la cola para no perder trazabilidad.',
       )
       return
     }
@@ -1494,10 +1495,6 @@ function App() {
             <>
               <p className="eyebrow" aria-hidden="true">Resumen operativo</p>
               <h2 id="hero-heading">Panel de Control</h2>
-              <p className="lead">
-                Bienvenido, <strong>{workspace?.profile?.fullName || 'Usuario'}</strong>.
-                Tu cartera está lista para la operación.
-              </p>
             </>
           ) : (
             <>
@@ -1516,7 +1513,7 @@ function App() {
                 onClick={handleRefreshWorkspace}
                 disabled={!dbReady || !authReady || isRefreshing}
               >
-                {isRefreshing ? 'Actualizando...' : 'Actualizar cartera'}
+                {isRefreshing ? 'Actualizando...' : 'Actualizar'}
               </button>
             )}
             {sessionUserId && canAccessOrigination && (
@@ -1528,7 +1525,7 @@ function App() {
                 }}
                 type="button"
               >
-                Nuevo Préstamo
+                Nuevo Crédito
               </button>
             )}
             {!sessionUserId && (
@@ -1566,11 +1563,14 @@ function App() {
         </div>
       </section>
 
-      <section className="panel-grid" aria-label="Estado del sistema">
+      <section className="status-strip" aria-label="Estado del sistema">
         {runtimeCards.map((card) => (
-          <article key={card.label} className={`status-card ${card.tone}`}>
-            <p className="metric-label">{card.label}</p>
-            <strong>{card.value}</strong>
+          <article key={card.label} className={`status-pill ${card.tone}`}>
+            <span className="status-indicator" />
+            <div className="status-pill-content">
+              <span className="metric-label">{card.label}</span>
+              <strong>{card.value}</strong>
+            </div>
           </article>
         ))}
       </section>
@@ -1692,6 +1692,16 @@ function App() {
               <span className="pill" aria-live="polite">{filteredLoanCards.length} préstamos</span>
             </div>
 
+            {filteredLoanCards.length > 0 && (
+              <Suspense fallback={null}>
+                <J
+                  cards={filteredLoanCards}
+                  onPick={handleSelectLoanFromQuickSearch}
+                  value={resolvedSelectedLoanId}
+                />
+              </Suspense>
+            )}
+
             {routeBoard.routes.length > 0 && (
               <>
                 <div className="route-board-header">
@@ -1713,71 +1723,26 @@ function App() {
                   </article>
                 </div>
 
-                <nav className="route-filter-strip" aria-label="Filtrar por ruta">
-                  <button
-                    className={`route-chip ${resolvedSelectedRouteLabel === 'all' ? 'selected' : ''}`}
-                    onClick={() => setSelectedRouteLabel('all')}
-                    type="button"
-                    aria-pressed={resolvedSelectedRouteLabel === 'all'}
-                  >
-                    <strong>Toda la cartera</strong>
-                    <span>{routeBoard.metrics.openLoanCount} préstamos</span>
-                  </button>
-                  {routeBoard.routes.map((route) => (
-                    <button
-                      key={route.routeLabel}
-                      className={`route-chip ${resolvedSelectedRouteLabel === route.routeLabel ? 'selected' : ''}`}
-                      onClick={() => setSelectedRouteLabel(route.routeLabel)}
-                      type="button"
-                      aria-pressed={resolvedSelectedRouteLabel === route.routeLabel}
-                    >
-                      <strong>{route.routeLabel}</strong>
-                      <span>{route.loanCount} préstamos</span>
-                    </button>
-                  ))}
-                </nav>
+                <div className="field route-filter-select">
+                  <span>Zona</span>
+                  <Suspense fallback={null}>
+                    <Z
+                      onPickRoute={setSelectedRouteLabel}
+                      routes={routeBoard.routes}
+                      totalOpenLoanCount={routeBoard.metrics.openLoanCount}
+                      value={resolvedSelectedRouteLabel}
+                    />
+                  </Suspense>
+                </div>
               </>
             )}
 
-            <div className="loan-list" role="list" aria-label="Lista de préstamos">
-              {filteredLoanCards.length === 0 ? (
-                <div className="empty-state" role="status">
-                  <strong>Sin resultados</strong>
-                  <p>No se encontraron préstamos que coincidan con los filtros actuales.</p>
-                </div>
-              ) : (
-                filteredLoanCards.map((loanCard) => (
-                  <button
-                    key={loanCard.loan.id}
-                    className={`loan-row ${loanCard.loan.id === selectedLoanId ? 'selected' : ''}`}
-                    onClick={() => {
-                      setSelectedLoanId(loanCard.loan.id)
-                      setIsOperationsSheetOpen(false)
-                      setActiveMobilePane('detail')
-                    }}
-                    type="button"
-                    role="listitem"
-                    aria-selected={loanCard.loan.id === selectedLoanId}
-                  >
-                    <div className="loan-row-main">
-                      <strong>{loanCard.customer.fullName}</strong>
-                      <span>{loanCard.customer.address}</span>
-                      <small>
-                        {loanCard.loan.externalLoanNumber
-                          ? `${loanCard.loan.externalLoanNumber} · ${loanCard.priorityNote}`
-                          : loanCard.priorityNote}
-                      </small>
-                    </div>
-                    <div className="loan-row-meta">
-                      <strong>{formatCurrency(loanCard.outstandingAmount, loanCard.loan.currencyCode, env.defaultLocale)}</strong>
-                      <span className={`chip ${describePriorityTone(loanCard.priority)}`}>
-                        {loanCard.priorityLabel}
-                      </span>
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
+            {filteredLoanCards.length === 0 && (
+              <div className="empty-state" role="status">
+                <strong>Sin resultados</strong>
+                <p>No se encontraron préstamos que coincidan con los filtros actuales.</p>
+              </div>
+            )}
           </article>
 
           <article
@@ -2390,17 +2355,6 @@ function describeReceiptPaneStatus(payment: LocalPayment) {
   return describePaymentSyncStatus(payment.syncStatus)
 }
 
-function describePriorityTone(priority: OperationalPriority) {
-  const toneMap: Record<OperationalPriority, string> = {
-    'sync-failed': 'danger',
-    overdue: 'danger',
-    'due-today': 'warning',
-    scheduled: 'pending',
-    settled: 'success',
-  }
-  return toneMap[priority] || 'neutral'
-}
-
 function extractOperationalError(error: unknown) {
   if (error instanceof Error) return translateOperationalError(error.message)
   return 'Error de sistema no identificado.'
@@ -2412,7 +2366,7 @@ function translateOperationalError(message: string) {
     'Invalid login credentials': 'Credenciales inválidas.',
     authentication_required: 'La sesión ya no está autenticada para cargar el recibo.',
     collector_not_allowed: 'Sin permisos de cobro.',
-    collection_action_follow_up_invalid: 'La fecha de seguimiento debe usar el formato YYYY-MM-DD.',
+    collection_action_follow_up_invalid: 'La fecha de seguimiento debe usar YYYY-MM-DD.',
     collection_action_follow_up_required: 'La gestión seleccionada exige fecha de seguimiento.',
     collection_action_outcome_invalid: 'La novedad de visita no es valida.',
     customer_archived: 'El deudor ya fue archivado y no admite gestión remota.',
@@ -2430,17 +2384,17 @@ function translateOperationalError(message: string) {
     loan_status_not_payable: 'Estado no cobrable.',
     loan_status_not_reversible: 'El préstamo ya no admite reverso en su estado actual.',
     loan_without_payable_installments: 'Sin cuotas pendientes.',
-    operator_inactive: 'Tu perfil está inactivo y no puede registrar eventos remotos.',
+    operator_inactive: 'Tu perfil está inactivo y no puede registrar eventos.',
     payment_id_required: 'Falta el identificador remoto del recibo.',
     payment_not_found: 'El recibo confirmado no está disponible para esta sesión.',
     payment_amount_exceeds_loan_outstanding: 'El monto excede el saldo.',
     payment_without_applications: 'El pago no tiene aplicaciones materializadas para restaurar saldo.',
     recorded_at_required: 'Falta la fecha real en que ocurrió la visita.',
-    reversal_actor_inactive: 'Tu perfil está inactivo y no puede registrar eventos remotos.',
-    reversal_actor_role_not_allowed: 'Solo un administrador activo puede reversar pagos confirmados.',
+    reversal_actor_inactive: 'Tu perfil está inactivo y no puede registrar eventos.',
+    reversal_actor_role_not_allowed: 'Solo un administrador activo puede reversar pagos.',
     reversal_exceeds_scheduled_amount: 'El reverso intentó restaurar un saldo mayor al valor programado de la cuota.',
     reversal_reason_required: 'Debes registrar un motivo antes de reversar el pago.',
-    reverse_role_not_allowed: 'Solo un administrador activo puede reversar pagos confirmados.',
+    reverse_role_not_allowed: 'Solo un administrador activo puede reversar pagos.',
     sign_in_credentials_required: 'Correo y contraseña requeridos.',
   }
   return knownMessages[message] ?? message
