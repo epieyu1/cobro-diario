@@ -211,6 +211,17 @@ La validación de preview debe confirmar:
 - generación inmediata del recibo confirmado y acción mobile-first `Compartir PDF` o `Guardar PDF`,
 - visibilidad de estados de sync.
 
+Si el preview está detrás de `Deployment Protection` o `Vercel Authentication`:
+
+- no relajar la barrera perimetral por conveniencia,
+- usar `scripts/phase4-mobile-smoke.mjs` con `PHASE4_SMOKE_VERCEL_BYPASS_SECRET=<secret>` y, por defecto, `PHASE4_SMOKE_VERCEL_SET_BYPASS_COOKIE=true`,
+- o usar una shareable preview link autorizada para la sesión de smoke.
+
+Restricción:
+
+- el secreto de bypass de automatización no debe escribirse en el repo, ni en `.env.example`, ni en documentación versionada;
+- solo debe viajar como variable de entorno de la corrida operativa autorizada.
+
 La validación manual en dispositivo real sigue diferida:
 
 - el smoke de preview no la reemplaza,
@@ -284,6 +295,18 @@ Revisar:
 - variables de entorno del proyecto Vercel,
 - commit realmente desplegado,
 - si se está usando la URL de preview correcta y no otra antigua
+
+### 4.1. El smoke del preview cae en `403 challenge`
+
+Revisar:
+
+- si la URL responde con `x-vercel-mitigated: challenge`,
+- si el smoke se está ejecutando con `PHASE4_SMOKE_VERCEL_BYPASS_SECRET`,
+- si la sesión usa una shareable preview link cuando no se permite el bypass automatizado.
+
+Referencia:
+
+- `scripts/phase4-mobile-smoke.mjs`
 
 ### 5. `manifest.webmanifest` devuelve `403` en preview protegido
 

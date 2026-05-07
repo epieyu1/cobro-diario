@@ -6,6 +6,8 @@ import { join } from 'node:path'
 const DEFAULT_APP_HOST = '127.0.0.1'
 const DEFAULT_APP_PORT = Number(process.env.PHASE4_SMOKE_PORT ?? '4174')
 const DEFAULT_APP_URL = process.env.PHASE4_SMOKE_URL ?? `http://${DEFAULT_APP_HOST}:${DEFAULT_APP_PORT}/`
+const DEFAULT_VERCEL_BYPASS_SECRET = process.env.PHASE4_SMOKE_VERCEL_BYPASS_SECRET?.trim() || null
+const DEFAULT_VERCEL_SET_BYPASS_COOKIE = (process.env.PHASE4_SMOKE_VERCEL_SET_BYPASS_COOKIE ?? 'true') !== 'false'
 const DEFAULT_CHROME_PATH =
   process.env.PHASE4_SMOKE_CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 const DEFAULT_DEBUG_PORT = Number(process.env.PHASE4_SMOKE_DEBUG_PORT ?? '9333')
@@ -21,6 +23,8 @@ const usage = `Usage:
 Environment overrides:
   PHASE4_SMOKE_URL=http://127.0.0.1:4174/
   PHASE4_SMOKE_PORT=4174
+  PHASE4_SMOKE_VERCEL_BYPASS_SECRET=<automation-bypass-secret>
+  PHASE4_SMOKE_VERCEL_SET_BYPASS_COOKIE=true
   PHASE4_SMOKE_CHROME=/Applications/Google Chrome.app/Contents/MacOS/Google Chrome
   PHASE4_SMOKE_DEBUG_PORT=9333
 `
@@ -52,6 +56,7 @@ main().catch(async (error) => {
 async function main() {
   const email = process.argv[2]
   const password = process.argv[3]
+  const smokeTarget = buildSmokeTarget(DEFAULT_APP_URL)
 
   if (!email || !password) {
     throw new Error(usage)
@@ -62,11 +67,18 @@ async function main() {
   }
 
   installProcessGuards()
-  await startDevServer()
-  await waitForHttp(DEFAULT_APP_URL, 30_000)
-  await startHeadlessChrome(DEFAULT_APP_URL)
+  if (smokeTarget.startLocalDevServer) {
+    await startDevServer()
+  }
+  await waitForHttp(smokeTarget.navigationUrl, 30_000)
+  await startHeadlessChrome(smokeTarget.navigationUrl)
 
-  const pageTarget = await waitForPageTarget(DEFAULT_DEBUG_HOST, DEFAULT_DEBUG_PORT, DEFAULT_APP_URL, 15_000)
+  const pageTarget = await waitForPageTarget(
+    DEFAULT_DEBUG_HOST,
+    DEFAULT_DEBUG_PORT,
+    smokeTarget.targetUrlPrefix,
+    15_000,
+  )
   const client = await createCdpClient(pageTarget.webSocketDebuggerUrl)
 
   try {
@@ -106,7 +118,7 @@ async function main() {
         });
       `,
     })
-    await client.send('Page.navigate', { url: DEFAULT_APP_URL })
+    await client.send('Page.navigate', { url: smokeTarget.navigationUrl })
     await client.waitForEvent('Page.loadEventFired', 20_000)
 
     await waitForCondition(
@@ -258,8 +270,9 @@ async function main() {
     console.log(
       JSON.stringify(
         {
-          appUrl: DEFAULT_APP_URL,
+          appUrl: smokeTarget.appUrl,
           customer: selectedCustomer,
+          navigationUrl: smokeTarget.navigationUrl,
           offlineQueueSnapshot: queuedSnapshot,
           portfolioCount,
           result: 'ok',
@@ -362,7 +375,17 @@ async function waitForHttp(url, timeoutMs) {
       if (response.ok) {
         return
       }
-    } catch {
+
+      if (response.status === 403 && response.headers.get('x-vercel-mitigated') === 'challenge') {
+        throw new Error(
+          'vercel_preview_challenge:configure PHASE4_SMOKE_VERCEL_BYPASS_SECRET or use a shareable preview link',
+        )
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message.startsWith('vercel_preview_challenge:')) {
+        throw error
+      }
+
       // Esperamos el próximo intento mientras Vite termina de abrir.
     }
 
@@ -392,6 +415,43 @@ async function waitForPageTarget(debugHost, debugPort, appUrl, timeoutMs) {
   }
 
   throw new Error(`chrome_target_timeout:${appUrl}`)
+}
+
+function buildSmokeTarget(rawAppUrl) {
+  const appUrl = new URL(rawAppUrl)
+
+  if (!appUrl.pathname) {
+    appUrl.pathname = '/'
+  }
+
+  const appBaseUrl = appUrl.toString()
+  const navigationUrl = new URL(appBaseUrl)
+  const targetUrl = new URL(appBaseUrl)
+
+  targetUrl.search = ''
+  targetUrl.hash = ''
+
+  // Vercel permite automatizar previews protegidos via query params que materializan
+  // la cookie de bypass en el navegador. El secreto no se persiste en el repo:
+  // solo se consume desde variable de entorno en la corrida operativa autorizada.
+  if (DEFAULT_VERCEL_BYPASS_SECRET) {
+    navigationUrl.searchParams.set('x-vercel-protection-bypass', DEFAULT_VERCEL_BYPASS_SECRET)
+
+    if (DEFAULT_VERCEL_SET_BYPASS_COOKIE) {
+      navigationUrl.searchParams.set('x-vercel-set-bypass-cookie', 'true')
+    }
+  }
+
+  return {
+    appUrl: appBaseUrl,
+    navigationUrl: navigationUrl.toString(),
+    startLocalDevServer: isLocalPreviewTarget(appUrl),
+    targetUrlPrefix: targetUrl.toString(),
+  }
+}
+
+function isLocalPreviewTarget(appUrl) {
+  return appUrl.hostname === '127.0.0.1' || appUrl.hostname === 'localhost'
 }
 
 async function createCdpClient(webSocketDebuggerUrl) {
